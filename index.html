@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Global Brand Team Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
+input,select,button{font-family:inherit}
+.topbar{background:#161616;border-bottom:1px solid #2a2a2a;padding:12px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:10}
+.logo-upload{width:48px;height:48px;border-radius:8px;border:1.5px dashed #c0392b;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0}
+.logo-upload img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.logo-upload span{font-size:9px;color:#c0392b;text-align:center;line-height:1.3;padding:4px}
+.brand-title{flex:1}
+.brand-title h1{font-size:17px;font-weight:500;color:#fff}
+.brand-title p{font-size:12px;color:#666;margin-top:2px}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:#888}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#c0392b;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.content{padding:20px 24px;display:flex;flex-direction:column;gap:20px}
+.section-title{font-size:11px;font-weight:500;color:#666;text-transform:uppercase;letter-spacing:0.1em;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.section-title::before{content:'';width:3px;height:12px;background:#c0392b;border-radius:2px;display:inline-block}
+
+/* Clocks */
+.clocks-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.clock-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:12px 14px;position:relative}
+.clock-card.manager{border-color:#c0392b;background:#1d1414}
+.region-badge{font-size:10px;font-weight:500;color:#c0392b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px}
+.person-name{font-size:11px;color:#777;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.time-display{font-size:21px;font-weight:500;color:#fff;font-variant-numeric:tabular-nums}
+.date-small{font-size:10px;color:#555;margin-top:3px}
+.status-dot{width:7px;height:7px;border-radius:50%;position:absolute;top:12px;right:12px}
+.s-online{background:#27ae60}
+.s-away{background:#e67e22}
+.s-offline{background:#3a3a3a}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:14px 16px}
+.stat-card.accent{border-color:#c0392b}
+.stat-num{font-size:28px;font-weight:500;color:#fff}
+.stat-num.red{color:#c0392b}
+.stat-num.green{color:#27ae60}
+.stat-num.purple{color:#7f8fd4}
+.stat-lbl{font-size:11px;color:#555;margin-top:3px}
+
+/* Projects */
+.projects-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.proj-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:14px 16px}
+.proj-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.proj-name{font-size:13px;font-weight:500;color:#e8e8e8;line-height:1.4}
+.badge{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:500;white-space:nowrap;flex-shrink:0}
+.b-region{background:#222;color:#777;border:0.5px solid #2e2e2e}
+.b-ontrack{background:#1a2e1a;color:#27ae60;border:0.5px solid #27ae60}
+.b-atrisk{background:#2e1e0f;color:#e67e22;border:0.5px solid #e67e22}
+.b-blocked{background:#2e1414;color:#c0392b;border:0.5px solid #c0392b}
+.b-done{background:#1a1a2e;color:#7f8fd4;border:0.5px solid #7f8fd4}
+.b-high{background:#2e1414;color:#c0392b}
+.b-med{background:#2e1e0f;color:#e67e22}
+.b-low{background:#1a2e1a;color:#27ae60}
+.proj-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.prog-bar{height:3px;background:#222;border-radius:2px;overflow:hidden;margin-bottom:8px}
+.prog-fill{height:100%;border-radius:2px;transition:width 0.4s}
+.prog-red{background:#c0392b}
+.prog-green{background:#27ae60}
+.prog-amber{background:#e67e22}
+.proj-foot{display:flex;justify-content:space-between;align-items:center}
+.proj-owner{font-size:11px;color:#666}
+.proj-due{font-size:11px;color:#555}
+.proj-notes{font-size:11px;color:#555;margin-top:7px;font-style:italic;line-height:1.4}
+
+/* Filters */
+.filter-row{display:flex;gap:8px}
+.sel{background:#1e1e1e;border:0.5px solid #2e2e2e;border-radius:6px;padding:6px 10px;font-size:12px;color:#aaa;cursor:pointer;outline:none}
+.sel:focus{border-color:#c0392b}
+
+/* Matrix */
+.matrix-wrap{display:flex;align-items:center;gap:14px}
+.axis-y{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:#444;letter-spacing:0.05em}
+.matrix-inner{display:flex;flex-direction:column;gap:3px;flex:1}
+.matrix-row{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.mcell{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:8px;padding:12px;min-height:86px}
+.mcell.tr{border-color:#c0392b}
+.mcell.tl{border-color:#e67e22}
+.mcell.br{border-color:#e67e22}
+.mcell.bl{background:#161616}
+.mcell h4{font-size:10px;font-weight:500;color:#666;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px}
+.pill{font-size:10px;color:#aaa;background:#222;border-radius:3px;padding:2px 7px;margin:2px 2px 0 0;display:inline-block}
+.axis-x{font-size:10px;color:#444;text-align:center;margin-top:4px;padding-left:24px;letter-spacing:0.05em}
+
+/* Intake */
+.intake-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:16px}
+.intake-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.ipt{background:#1e1e1e;border:0.5px solid #2e2e2e;border-radius:6px;padding:8px 12px;font-size:12px;color:#e8e8e8;outline:none;transition:border-color 0.2s}
+.ipt:focus{border-color:#c0392b}
+.ipt.big{flex:3}
+.ipt.sm{flex:1;max-width:150px}
+.add-btn{background:#c0392b;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:12px;cursor:pointer;white-space:nowrap;transition:background 0.2s}
+.add-btn:hover{background:#a93226}
+.gws-note{background:#161616;border:0.5px solid #2a2a2a;border-radius:8px;padding:12px 16px;margin-top:12px;display:flex;gap:10px}
+.gws-icon{font-size:13px;color:#c0392b;flex-shrink:0;font-weight:500;margin-top:1px}
+.gws-text{font-size:11px;color:#666;line-height:1.7}
+.gws-text strong{color:#999}
+.gws-text a{color:#c0392b;text-decoration:none}
+
+/* Meeting finder */
+.meet-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:16px}
+.meet-sub{font-size:12px;color:#555;margin-bottom:12px}
+.tz-labels-row{display:flex;margin-left:96px;margin-bottom:3px}
+.tz-lbl{font-size:9px;color:#444;text-align:center}
+.tz-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.tz-name{font-size:11px;color:#666;width:88px;flex-shrink:0}
+.tz-bar{flex:1;height:18px;border-radius:3px;overflow:hidden;background:#161616;display:flex}
+.hb{flex:1;height:100%;border-right:1px solid #0f0f0f}
+.hb.work{background:#1e3320}
+.hb.overlap{background:#c0392b;opacity:0.9}
+.hb.off{background:#161616}
+.meet-legend{display:flex;gap:16px;margin-top:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#555}
+.leg-sq{width:10px;height:10px;border-radius:2px}
+.best-slot{background:#1d1414;border:1px solid #c0392b;border-radius:8px;padding:11px 14px;margin-top:14px;display:flex;align-items:center;justify-content:space-between}
+.bs-label{font-size:12px;color:#c0392b;font-weight:500;margin-bottom:3px}
+.bs-times{font-size:11px;color:#888;line-height:1.7}
+.bs-quality{text-align:right}
+.bs-qlabel{font-size:10px;color:#555;margin-bottom:2px}
+.bs-qval{font-size:13px;color:#e67e22;font-weight:500}
+
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-upload" onclick="document.getElementById('logoInput').click()" title="Upload your team logo">
+    <img id="logoImg" src="" style="display:none"/>
+    <span id="logoTxt">Upload logo</span>
+  </div>
+  <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(event)"/>
+  <div class="brand-title">
+    <h1>Global Brand Team</h1>
+    <p>Async project dashboard &mdash; <span id="todayStr"></span></p>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div>Live</div>
+</div>
+
+<div class="content">
+
+  <!-- Clocks -->
+  <div>
+    <div class="section-title">Team clocks</div>
+    <div class="clocks-grid" id="clocksGrid"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <!-- Project Board -->
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin-bottom:0">Project board</div>
+      <div class="filter-row">
+        <select class="sel" id="filterRegion" onchange="renderProjects()">
+          <option value="">All regions</option>
+          <option value="NA">NA</option>
+          <option value="LATAM">LATAM</option>
+          <option value="EMEA">EMEA</option>
+          <option value="APAC">APAC</option>
+        </select>
+        <select class="sel" id="filterStatus" onchange="renderProjects()">
+          <option value="">All statuses</option>
+          <option value="On Track">On Track</option>
+          <option value="At Risk">At Risk</option>
+          <option value="Blocked">Blocked</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+    </div>
+    <div class="projects-grid" id="projectsGrid"></div>
+  </div>
+
+  <!-- Priority Matrix -->
+  <div>
+    <div class="section-title">Priority matrix</div>
+    <div class="matrix-wrap">
+      <div class="axis-y">Impact &uarr;</div>
+      <div class="matrix-inner">
+        <div class="matrix-row">
+          <div class="mcell tl">
+            <h4>High impact &bull; low urgency</h4>
+            <span class="pill">Brand guidelines refresh</span>
+            <span class="pill">APAC social playbook</span>
+          </div>
+          <div class="mcell tr">
+            <h4>High impact &bull; high urgency</h4>
+            <span class="pill">Global campaign launch</span>
+            <span class="pill">Q3 exec deck</span>
+          </div>
+        </div>
+        <div class="matrix-row">
+          <div class="mcell bl">
+            <h4>Low impact &bull; low urgency</h4>
+            <span class="pill">Swag store update</span>
+          </div>
+          <div class="mcell br">
+            <h4>Low impact &bull; high urgency</h4>
+            <span class="pill">Email sig rollout</span>
+            <span class="pill">Event banners</span>
+          </div>
+        </div>
+        <div class="axis-x">Urgency &rarr;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Intake -->
+  <div>
+    <div class="section-title">Project intake</div>
+    <div class="intake-card">
+      <div class="intake-row">
+        <input class="ipt big" id="intakeTitle" placeholder="Project title..."/>
+        <select class="sel ipt" id="intakeRegion">
+          <option value="NA">NA</option>
+          <option value="LATAM">LATAM</option>
+          <option value="EMEA">EMEA</option>
+          <option value="APAC">APAC</option>
+        </select>
+        <select class="sel ipt" id="intakePriority">
+          <option value="high">High</option>
+          <option value="med">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <button class="add-btn" onclick="addProject()">+ Add project</button>
+      </div>
+      <div class="intake-row" style="margin-bottom:0">
+        <input class="ipt" style="flex:1" id="intakeNotes" placeholder="Brief description or async notes..."/>
+        <input class="ipt sm" id="intakeDue" type="date"/>
+      </div>
+      <div class="gws-note">
+        <div class="gws-icon">G</div>
+        <div class="gws-text">
+          <strong>Google Workspace integration</strong><br/>
+          Connect a Google Sheet as a live data source via the <a href="https://developers.google.com/sheets/api" target="_blank">Sheets API</a>, or use Google Forms for structured intake. Gmail labels can be mapped to project status with Apps Script. Ask Claude to help set this up when ready.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meeting Finder -->
+  <div>
+    <div class="section-title">Wednesday global meeting finder</div>
+    <div class="meet-card">
+      <div class="meet-sub" id="meetSub"></div>
+      <div class="tz-labels-row" id="tzLabels"></div>
+      <div id="tzTimeline"></div>
+      <div class="meet-legend">
+        <div class="leg"><div class="leg-sq" style="background:#c0392b"></div>Best overlap</div>
+        <div class="leg"><div class="leg-sq" style="background:#1e3320"></div>Working hours</div>
+        <div class="leg"><div class="leg-sq" style="background:#161616"></div>Outside hours</div>
+      </div>
+      <div class="best-slot">
+        <div>
+          <div class="bs-label">Recommended slot</div>
+          <div class="bs-times" id="bsTimes"></div>
+        </div>
+        <div class="bs-quality">
+          <div class="bs-qlabel">Overlap quality</div>
+          <div class="bs-qval">Partial (3/4)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TEAM=[
+  {label:'Manager',name:'Team Manager',tz:'America/New_York',city:'HQ',role:'manager'},
+  {label:'NA',name:'Alex Rivera',tz:'America/New_York',city:'Virginia',role:'bm'},
+  {label:'LATAM',name:'Camila Torres',tz:'America/Santiago',city:'Chile',role:'bm'},
+  {label:'EMEA',name:'Lukas Becker',tz:'Europe/Berlin',city:'Germany',role:'bm'},
+  {label:'APAC',name:'Mei Chen',tz:'Asia/Singapore',city:'Singapore',role:'bm'},
+];
+
+let projects=[
+  {id:1,name:'Global brand campaign launch',region:'NA',owner:'Alex Rivera',status:'On Track',priority:'high',progress:65,due:'2025-06-15',notes:'Concept approved, in production'},
+  {id:2,name:'LATAM regional brand guidelines',region:'LATAM',owner:'Camila Torres',status:'At Risk',priority:'high',progress:40,due:'2025-05-30',notes:'Awaiting legal review'},
+  {id:3,name:'EMEA sustainability narrative',region:'EMEA',owner:'Lukas Becker',status:'On Track',priority:'med',progress:80,due:'2025-05-20',notes:'Final draft in review'},
+  {id:4,name:'APAC social content playbook',region:'APAC',owner:'Mei Chen',status:'Blocked',priority:'high',progress:25,due:'2025-06-01',notes:'Blocked on photography assets'},
+  {id:5,name:'Q3 global exec presentation',region:'NA',owner:'Team Manager',status:'On Track',priority:'med',progress:55,due:'2025-07-01',notes:'Slides in progress'},
+  {id:6,name:'Email signature rollout',region:'EMEA',owner:'Lukas Becker',status:'On Track',priority:'low',progress:90,due:'2025-05-10',notes:'Nearly complete'},
+  {id:7,name:'Brand swag store refresh',region:'APAC',owner:'Mei Chen',status:'Done',priority:'low',progress:100,due:'2025-04-30',notes:'Launched successfully'},
+  {id:8,name:'LATAM event brand kit',region:'LATAM',owner:'Camila Torres',status:'Done',priority:'med',progress:100,due:'2025-04-25',notes:'Delivered to events team'},
+];
+
+function localTime(tz){return new Date().toLocaleString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:true});}
+function localDate(tz){return new Date().toLocaleString('en-US',{timeZone:tz,weekday:'short',month:'short',day:'numeric'});}
+function localHour(tz){return parseInt(new Date().toLocaleString('en-US',{timeZone:tz,hour:'2-digit',hour12:false}));}
+function utcOffset(tz){const now=new Date();return Math.round((new Date(now.toLocaleString('en-US',{timeZone:tz}))-new Date(now.toLocaleString('en-US',{timeZone:'UTC'})))/3600000);}
+
+function buildClocks(){
+  const g=document.getElementById('clocksGrid');g.innerHTML='';
+  TEAM.forEach(m=>{
+    const h=localHour(m.tz);
+    const sc=h<7||h>=21?'s-offline':h>=8&&h<18?'s-online':'s-away';
+    const d=document.createElement('div');
+    d.className='clock-card'+(m.role==='manager'?' manager':'');
+    d.innerHTML=`<div class="region-badge">${m.label}</div><div class="person-name">${m.name}</div><div class="time-display" id="ct-${m.label}">${localTime(m.tz)}</div><div class="date-small">${localDate(m.tz)} &bull; ${m.city}</div><div class="status-dot ${sc}"></div>`;
+    g.appendChild(d);
+  });
+}
+function tickClocks(){TEAM.forEach(m=>{const el=document.getElementById('ct-'+m.label);if(el)el.textContent=localTime(m.tz);});}
+
+function buildStats(){
+  const total=projects.length;
+  const ontrack=projects.filter(p=>p.status==='On Track').length;
+  const atrisk=projects.filter(p=>p.status==='At Risk'||p.status==='Blocked').length;
+  const done=projects.filter(p=>p.status==='Done').length;
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">Total projects</div></div>
+    <div class="stat-card"><div class="stat-num green">${ontrack}</div><div class="stat-lbl">On track</div></div>
+    <div class="stat-card accent"><div class="stat-num red">${atrisk}</div><div class="stat-lbl">At risk / blocked</div></div>
+    <div class="stat-card"><div class="stat-num purple">${done}</div><div class="stat-lbl">Completed</div></div>
+  `;
+}
+
+function statusClass(s){return s==='On Track'?'b-ontrack':s==='At Risk'?'b-atrisk':s==='Blocked'?'b-blocked':'b-done';}
+function progClass(s){return s==='Done'?'prog-green':s==='Blocked'||s==='At Risk'?'prog-amber':'prog-red';}
+
+function renderProjects(){
+  const reg=document.getElementById('filterRegion').value;
+  const st=document.getElementById('filterStatus').value;
+  const list=projects.filter(p=>(!reg||p.region===reg)&&(!st||p.status===st));
+  const g=document.getElementById('projectsGrid');g.innerHTML='';
+  if(!list.length){g.innerHTML='<div style="color:#444;font-size:13px;padding:16px;grid-column:span 2">No projects match the filters.</div>';return;}
+  list.forEach(p=>{
+    const c=document.createElement('div');c.className='proj-card';
+    c.innerHTML=`
+      <div class="proj-top">
+        <div class="proj-name">${p.name}</div>
+        <span class="badge b-${p.priority}" style="flex-shrink:0">${p.priority==='high'?'High':p.priority==='med'?'Med':'Low'}</span>
+      </div>
+      <div class="proj-meta">
+        <span class="badge b-region">${p.region}</span>
+        <span class="badge ${statusClass(p.status)}">${p.status}</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill ${progClass(p.status)}" style="width:${p.progress}%"></div></div>
+      <div class="proj-foot">
+        <span class="proj-owner">${p.owner||'Unassigned'}</span>
+        <span class="proj-due">Due ${p.due}</span>
+      </div>
+      ${p.notes?`<div class="proj-notes">${p.notes}</div>`:''}
+    `;
+    g.appendChild(c);
+  });
+}
+
+function addProject(){
+  const title=document.getElementById('intakeTitle').value.trim();
+  if(!title)return;
+  projects.unshift({id:Date.now(),name:title,region:document.getElementById('intakeRegion').value,owner:'',status:'On Track',priority:document.getElementById('intakePriority').value,progress:0,due:document.getElementById('intakeDue').value||'TBD',notes:document.getElementById('intakeNotes').value.trim()});
+  buildStats();renderProjects();
+  ['intakeTitle','intakeNotes','intakeDue'].forEach(id=>document.getElementById(id).value='');
+}
+
+function buildMeeting(){
+  const ZONES=[{l:'NA (ET)',tz:'America/New_York'},{l:'LATAM (CLT)',tz:'America/Santiago'},{l:'EMEA (CET)',tz:'Europe/Berlin'},{l:'APAC (SGT)',tz:'Asia/Singapore'}];
+  const H=Array.from({length:24},(_,i)=>i);
+  const overlap=new Array(24).fill(0);
+  ZONES.forEach(z=>{const o=utcOffset(z.tz);H.forEach(u=>{const l=(u+o+24)%24;if(l>=8&&l<18)overlap[u]++;});});
+  const best=overlap.reduce((bi,v,i,a)=>v>a[bi]?i:bi,0);
+
+  const labRow=document.getElementById('tzLabels');labRow.innerHTML='';
+  [0,3,6,9,12,15,18,21].forEach(h=>{const s=document.createElement('span');s.className='tz-lbl';s.style.flex='3';s.textContent=h===0?'12a':h<12?h+'a':h===12?'12p':(h-12)+'p';labRow.appendChild(s);});
+
+  const tl=document.getElementById('tzTimeline');tl.innerHTML='';
+  ZONES.forEach(z=>{
+    const o=utcOffset(z.tz);
+    const row=document.createElement('div');row.className='tz-row';
+    const lbl=document.createElement('div');lbl.className='tz-name';lbl.textContent=z.l;row.appendChild(lbl);
+    const bar=document.createElement('div');bar.className='tz-bar';
+    H.forEach(u=>{const l=(u+o+24)%24;const isBest=overlap[u]>=3&&u>=best&&u<best+2;const isWork=l>=8&&l<18;const b=document.createElement('div');b.className='hb '+(isBest?'overlap':isWork?'work':'off');bar.appendChild(b);});
+    row.appendChild(bar);tl.appendChild(row);
+  });
+
+  const fmt=h=>{const ap=h>=12?'pm':'am';return(h%12||12)+':00'+ap;};
+  const fmtLocal=(u,tz)=>{const l=(u+utcOffset(tz)+24)%24;const ap=l>=12?'pm':'am';return(l%12||12)+':00'+ap;};
+  document.getElementById('bsTimes').innerHTML=
+    `Wed ${fmt(best)} &ndash; ${fmt(best+2)} UTC<br>`+
+    `NA: ${fmtLocal(best,'America/New_York')} &bull; LATAM: ${fmtLocal(best,'America/Santiago')} &bull; EMEA: ${fmtLocal(best,'Europe/Berlin')} &bull; APAC: ${fmtLocal(best,'Asia/Singapore')}`;
+
+  const nw=new Date();const diff=(3-nw.getDay()+7)%7||7;nw.setDate(nw.getDate()+diff);
+  document.getElementById('meetSub').textContent='Next Wednesday: '+nw.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+' — UTC hours 0–23';
+}
+
+function handleLogo(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{document.getElementById('logoImg').src=ev.target.result;document.getElementById('logoImg').style.display='block';document.getElementById('logoTxt').style.display='none';};r.readAsDataURL(f);
+}
+
+document.getElementById('todayStr').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+buildClocks();buildStats();renderProjects();buildMeeting();
+setInterval(tickClocks,30000);
+</script>
+</body>
+</html>
