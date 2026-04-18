@@ -48,7 +48,13 @@ input,select,button{font-family:inherit}
 
 /* Projects */
 .projects-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.proj-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:14px 16px}
+.proj-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:14px 16px;transition:border-color 0.2s}
+.proj-card:hover{border-color:#3a3a3a}
+.inline-sel{background:#222;border:0.5px solid #333;border-radius:4px;padding:3px 6px;font-size:11px;color:#e8e8e8;cursor:pointer;outline:none;transition:border-color 0.2s}
+.inline-sel:focus{border-color:#c0392b}
+.saving{opacity:0.5;pointer-events:none}
+.save-ok{color:#27ae60;font-size:10px;margin-left:6px}
+.save-err{color:#c0392b;font-size:10px;margin-left:6px}
 .proj-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
 .proj-name{font-size:13px;font-weight:500;color:#e8e8e8;line-height:1.4}
 .badge{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:500;white-space:nowrap;flex-shrink:0}
@@ -133,13 +139,10 @@ input[type=file]{display:none}
 <body>
 
 <div class="topbar">
-  <div class="logo-upload" onclick="document.getElementById('logoInput').click()" title="Upload your team logo">
-    <img id="logoImg" src="" style="display:none"/>
-    <span id="logoTxt">Upload logo</span>
+  <div style="display:flex;align-items:center;flex-shrink:0">
+    <img src="./logo.png" alt="Red Hat Global Brand Team" style="height:36px;width:auto;mix-blend-mode:screen;" onerror="this.style.display='none'"/>
   </div>
-  <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(event)"/>
   <div class="brand-title">
-    <h1>Global Brand Team</h1>
     <p>Async project dashboard &mdash; <span id="todayStr"></span></p>
   </div>
   <div class="live-badge"><div class="live-dot"></div>Live</div>
@@ -283,16 +286,86 @@ const TEAM=[
   {label:'APAC',name:'Mei Chen',tz:'Asia/Singapore',city:'Singapore',role:'bm'},
 ];
 
-let projects=[
-  {id:1,name:'Global brand campaign launch',region:'NA',owner:'Alex Rivera',status:'On Track',priority:'high',progress:65,due:'2025-06-15',notes:'Concept approved, in production'},
-  {id:2,name:'LATAM regional brand guidelines',region:'LATAM',owner:'Camila Torres',status:'At Risk',priority:'high',progress:40,due:'2025-05-30',notes:'Awaiting legal review'},
-  {id:3,name:'EMEA sustainability narrative',region:'EMEA',owner:'Lukas Becker',status:'On Track',priority:'med',progress:80,due:'2025-05-20',notes:'Final draft in review'},
-  {id:4,name:'APAC social content playbook',region:'APAC',owner:'Mei Chen',status:'Blocked',priority:'high',progress:25,due:'2025-06-01',notes:'Blocked on photography assets'},
-  {id:5,name:'Q3 global exec presentation',region:'NA',owner:'Team Manager',status:'On Track',priority:'med',progress:55,due:'2025-07-01',notes:'Slides in progress'},
-  {id:6,name:'Email signature rollout',region:'EMEA',owner:'Lukas Becker',status:'On Track',priority:'low',progress:90,due:'2025-05-10',notes:'Nearly complete'},
-  {id:7,name:'Brand swag store refresh',region:'APAC',owner:'Mei Chen',status:'Done',priority:'low',progress:100,due:'2025-04-30',notes:'Launched successfully'},
-  {id:8,name:'LATAM event brand kit',region:'LATAM',owner:'Camila Torres',status:'Done',priority:'med',progress:100,due:'2025-04-25',notes:'Delivered to events team'},
-];
+const SHEET_ID = '17rg3J-rIJDFc1-OIZ9lif6sTyBJTyivCRfLWV-jy4TU';
+const WEB_APP_URL = 'https://script.google.com/a/macros/redhat.com/s/AKfycbyb1ZCN1DMB24A-JQPWEI0XsNrR3H4CY6i4W6BtBzc5Fr9TvybbXB1V7UM2IX5Bdrkg/exec';
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Intake`;
+
+let projects = [];
+
+async function fetchSheetProjects() {
+  const grid = document.getElementById('projectsGrid');
+  grid.innerHTML = '<div style="color:#555;font-size:13px;padding:16px;grid-column:span 2">Loading from Google Sheet...</div>';
+  try {
+    const res = await fetch(SHEET_CSV_URL);
+    if (!res.ok) throw new Error('Network error');
+    const csv = await res.text();
+    const rows = parseCSV(csv);
+    if (rows.length < 2) { grid.innerHTML = '<div style="color:#555;font-size:13px;padding:16px;grid-column:span 2">No intake rows found in Sheet yet.</div>'; return; }
+    // headers: Date, Region, From, Subject/Project, Priority, Description, Status, Thread link
+    const sheetRow = i + 2; // +2 for 1-based index + header row
+    projects = rows.slice(1).map((r, i) => ({
+      id:       i + 1,
+      sheetRow: i + 2,
+      name:     r[3] || '(no subject)',
+      region:   r[1] || '—',
+      owner:    r[2] || '—',
+      status:   mapStatus(r[6]),
+      rawStatus: r[6] || 'New',
+      priority: mapPriority(r[4]),
+      rawPriority: r[4] || 'Medium',
+      progress: progressFromStatus(r[6]),
+      due:      r[0] ? r[0].substring(0, 10) : '—',
+      notes:    r[5] ? r[5].substring(0, 120) : '',
+    }));
+    buildStats();
+    renderProjects();
+  } catch(e) {
+    grid.innerHTML = `<div style="color:#c0392b;font-size:13px;padding:16px;grid-column:span 2">Could not load Sheet data. Make sure it is published to the web.<br><small>${e.message}</small></div>`;
+  }
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') { if (inQ && text[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ''; }
+    else if ((ch === '\n' || ch === '\r') && !inQ) {
+      row.push(cur.trim()); rows.push(row); row = []; cur = '';
+      if (ch === '\r' && text[i+1] === '\n') i++;
+    } else cur += ch;
+  }
+  if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
+  return rows.filter(r => r.some(c => c));
+}
+
+function mapStatus(s) {
+  if (!s) return 'New';
+  const v = s.toLowerCase();
+  if (v.includes('approved')) return 'On Track';
+  if (v.includes('review'))   return 'At Risk';
+  if (v.includes('rejected')) return 'Blocked';
+  if (v.includes('done') || v.includes('complete')) return 'Done';
+  return 'On Track';
+}
+
+function mapPriority(p) {
+  if (!p) return 'med';
+  const v = p.toLowerCase();
+  if (v === 'high') return 'high';
+  if (v === 'low')  return 'low';
+  return 'med';
+}
+
+function progressFromStatus(s) {
+  if (!s) return 0;
+  const v = s.toLowerCase();
+  if (v.includes('approved') || v.includes('done')) return 100;
+  if (v.includes('review'))  return 50;
+  if (v.includes('rejected')) return 0;
+  return 10;
+}
 
 function localTime(tz){return new Date().toLocaleString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:true});}
 function localDate(tz){return new Date().toLocaleString('en-US',{timeZone:tz,weekday:'short',month:'short',day:'numeric'});}
@@ -325,7 +398,40 @@ function buildStats(){
   `;
 }
 
-function statusClass(s){return s==='On Track'?'b-ontrack':s==='At Risk'?'b-atrisk':s==='Blocked'?'b-blocked':'b-done';}
+async function updateField(projId, sheetRow, field, selectEl) {
+  const value = selectEl.value;
+  selectEl.dataset.prev = value; // remember previous value in case of auth error
+  const ind = document.getElementById('ind-' + projId);
+  const card = selectEl.closest('.proj-card');
+  card.classList.add('saving');
+  ind.innerHTML = '<span style="color:#888;font-size:10px">Saving...</span>';
+  try {
+    const res = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ row: sheetRow, field, value }),
+    });
+    const json = await res.json();
+    if (json.ok) {      ind.innerHTML = '<span class="save-ok">Saved</span>';
+      setTimeout(() => { ind.innerHTML = ''; }, 2000);
+      // Update badge visually without full reload
+      if (field === 'status') {
+        const sb = document.getElementById('sbadge-' + projId);
+        if (sb) { sb.className = 'badge ' + statusClass(mapStatus(value)); sb.textContent = value; }
+      }
+      if (field === 'priority') {
+        const pb = document.getElementById('pbadge-' + projId);
+        const mp = mapPriority(value);
+        if (pb) { pb.className = 'badge b-' + mp; pb.textContent = value; }
+      }
+    } else throw new Error(json.error);
+  } catch(err) {
+    ind.innerHTML = '<span class="save-err">Error — check Web App URL</span>';
+    setTimeout(() => { ind.innerHTML = ''; }, 4000);
+  }
+  card.classList.remove('saving');
+}
+
+return s==='On Track'?'b-ontrack':s==='At Risk'?'b-atrisk':s==='Blocked'?'b-blocked':'b-done';}
 function progClass(s){return s==='Done'?'prog-green':s==='Blocked'||s==='At Risk'?'prog-amber':'prog-red';}
 
 function renderProjects(){
@@ -394,14 +500,13 @@ function buildMeeting(){
   document.getElementById('meetSub').textContent='Next Wednesday: '+nw.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+' — UTC hours 0–23';
 }
 
-function handleLogo(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{document.getElementById('logoImg').src=ev.target.result;document.getElementById('logoImg').style.display='block';document.getElementById('logoTxt').style.display='none';};r.readAsDataURL(f);
-}
+
 
 document.getElementById('todayStr').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-buildClocks();buildStats();renderProjects();buildMeeting();
-setInterval(tickClocks,30000);
+buildClocks();buildMeeting();
+fetchSheetProjects();
+setInterval(tickClocks, 30000);
+setInterval(fetchSheetProjects, 5 * 60 * 1000); // refresh Sheet every 5 minutes
 </script>
 </body>
 </html>
