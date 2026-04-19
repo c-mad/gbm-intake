@@ -267,8 +267,6 @@ const TYPES = [
   'Orchestration System',
 ];
 const WEB_APP_URL = 'https://script.google.com/a/macros/redhat.com/s/AKfycbyb1ZCN1DMB24A-JQPWEI0XsNrR3H4CY6i4W6BtBzc5Fr9TvybbXB1V7UM2IX5Bdrkg/exec';
-const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Intake`;
-
 let projects = [];
 
 async function fetchSheetProjects() {
@@ -302,22 +300,6 @@ async function fetchSheetProjects() {
   } catch(e) {
     grid.innerHTML = `<div style="color:#c0392b;font-size:13px;padding:16px;grid-column:span 2">Could not load Sheet data. Make sure it is published to the web.<br><small>${e.message}</small></div>`;
   }
-}
-
-function parseCSV(text) {
-  const rows = [];
-  let row = [], cur = '', inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '"') { if (inQ && text[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
-    else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ''; }
-    else if ((ch === '\n' || ch === '\r') && !inQ) {
-      row.push(cur.trim()); rows.push(row); row = []; cur = '';
-      if (ch === '\r' && text[i+1] === '\n') i++;
-    } else cur += ch;
-  }
-  if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
-  return rows.filter(r => r.some(c => c));
 }
 
 function mapStatus(s) {
