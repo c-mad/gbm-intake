@@ -97,19 +97,7 @@ input,select,button{font-family:inherit}
 .axis-x{font-size:10px;color:#444;text-align:center;margin-top:4px;padding-left:24px;letter-spacing:0.05em}
 
 /* Intake */
-.intake-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:16px}
-.intake-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
-.ipt{background:#1e1e1e;border:0.5px solid #2e2e2e;border-radius:6px;padding:8px 12px;font-size:12px;color:#e8e8e8;outline:none;transition:border-color 0.2s}
-.ipt:focus{border-color:#c0392b}
-.ipt.big{flex:3}
-.ipt.sm{flex:1;max-width:150px}
-.add-btn{background:#c0392b;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:12px;cursor:pointer;white-space:nowrap;transition:background 0.2s}
-.add-btn:hover{background:#a93226}
-.gws-note{background:#161616;border:0.5px solid #2a2a2a;border-radius:8px;padding:12px 16px;margin-top:12px;display:flex;gap:10px}
-.gws-icon{font-size:13px;color:#c0392b;flex-shrink:0;font-weight:500;margin-top:1px}
-.gws-text{font-size:11px;color:#666;line-height:1.7}
-.gws-text strong{color:#999}
-.gws-text a{color:#c0392b;text-decoration:none}
+
 
 /* Meeting finder */
 .meet-card{background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:16px}
@@ -178,6 +166,10 @@ input[type=file]{display:none}
           <option value="Blocked">Blocked</option>
           <option value="Done">Done</option>
         </select>
+        <select class="sel" id="filterType" onchange="renderProjects()">
+          <option value="">All types</option>
+          ${TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+        </select>
       </div>
     </div>
     <div class="projects-grid" id="projectsGrid"></div>
@@ -217,36 +209,16 @@ input[type=file]{display:none}
     </div>
   </div>
 
-  <!-- Intake -->
+
+
+  <!-- Intake by Type Chart -->
   <div>
-    <div class="section-title">Project intake</div>
-    <div class="intake-card">
-      <div class="intake-row">
-        <input class="ipt big" id="intakeTitle" placeholder="Project title..."/>
-        <select class="sel ipt" id="intakeRegion">
-          <option value="NA">NA</option>
-          <option value="LATAM">LATAM</option>
-          <option value="EMEA">EMEA</option>
-          <option value="APAC">APAC</option>
-        </select>
-        <select class="sel ipt" id="intakePriority">
-          <option value="high">High</option>
-          <option value="med">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <button class="add-btn" onclick="addProject()">+ Add project</button>
+    <div class="section-title">Project intake by type</div>
+    <div style="background:#1a1a1a;border:0.5px solid #2a2a2a;border-radius:10px;padding:16px">
+      <div style="position:relative;height:240px">
+        <canvas id="typeChart" role="img" aria-label="Line chart of weekly project intake by work type over the past 3 months"></canvas>
       </div>
-      <div class="intake-row" style="margin-bottom:0">
-        <input class="ipt" style="flex:1" id="intakeNotes" placeholder="Brief description or async notes..."/>
-        <input class="ipt sm" id="intakeDue" type="date"/>
-      </div>
-      <div class="gws-note">
-        <div class="gws-icon">G</div>
-        <div class="gws-text">
-          <strong>Google Workspace integration</strong><br/>
-          Connect a Google Sheet as a live data source via the <a href="https://developers.google.com/sheets/api" target="_blank">Sheets API</a>, or use Google Forms for structured intake. Gmail labels can be mapped to project status with Apps Script. Ask Claude to help set this up when ready.
-        </div>
-      </div>
+      <div id="typeChartLegend" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:12px;border-top:0.5px solid #222"></div>
     </div>
   </div>
 
@@ -279,14 +251,21 @@ input[type=file]{display:none}
 
 <script>
 const TEAM=[
-  {label:'Manager',name:'Team Manager',tz:'America/New_York',city:'HQ',role:'manager'},
-  {label:'NA',name:'Alex Rivera',tz:'America/New_York',city:'Virginia',role:'bm'},
-  {label:'LATAM',name:'Camila Torres',tz:'America/Santiago',city:'Chile',role:'bm'},
-  {label:'EMEA',name:'Lukas Becker',tz:'Europe/Berlin',city:'Germany',role:'bm'},
-  {label:'APAC',name:'Mei Chen',tz:'Asia/Singapore',city:'Singapore',role:'bm'},
+  {label:'Admin',name:'Consuelo',tz:'America/New_York',city:'HQ',role:'manager'},
+  {label:'NA',name:'Stephanie',tz:'America/New_York',city:'Virginia',role:'bm'},
+  {label:'LATAM',name:'Andie',tz:'America/Santiago',city:'Chile',role:'bm'},
+  {label:'EMEA',name:'Damiano',tz:'Europe/Berlin',city:'Germany',role:'bm'},
+  {label:'APAC',name:'Drishti',tz:'Asia/Singapore',city:'Singapore',role:'bm'},
 ];
 
-const SHEET_ID = '17rg3J-rIJDFc1-OIZ9lif6sTyBJTyivCRfLWV-jy4TU';
+const TYPES = [
+  'Brand to Demand (GTM)',
+  'Product Experiences',
+  'Corp Events',
+  'Core Experiences (web)',
+  'Brand Strategy + Systems',
+  'Orchestration System',
+];
 const WEB_APP_URL = 'https://script.google.com/a/macros/redhat.com/s/AKfycbyb1ZCN1DMB24A-JQPWEI0XsNrR3H4CY6i4W6BtBzc5Fr9TvybbXB1V7UM2IX5Bdrkg/exec';
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Intake`;
 
@@ -319,6 +298,7 @@ async function fetchSheetProjects() {
     }));
     buildStats();
     renderProjects();
+    buildTypeChart();
   } catch(e) {
     grid.innerHTML = `<div style="color:#c0392b;font-size:13px;padding:16px;grid-column:span 2">Could not load Sheet data. Make sure it is published to the web.<br><small>${e.message}</small></div>`;
   }
@@ -398,7 +378,109 @@ function buildStats(){
   `;
 }
 
-async function updateField(projId, sheetRow, field, selectEl) {
+let typeChartInstance = null;
+function buildTypeChart() {
+  const canvas = document.getElementById('typeChart');
+  if (!canvas) return;
+  if (typeChartInstance) { typeChartInstance.destroy(); }
+
+  // Build 13-week buckets going back from today
+  const now = new Date();
+  const weeks = [];
+  for (let i = 12; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i * 7);
+    // Start of that week (Monday)
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((day + 6) % 7));
+    monday.setHours(0,0,0,0);
+    weeks.push(monday);
+  }
+
+  const labels = weeks.map(w =>
+    w.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  );
+
+  // For each type, count projects per week
+  const TYPE_COLORS = [
+    '#c0392b', // Brand to Demand
+    '#e67e22', // Product Experiences
+    '#27ae60', // Corp Events
+    '#7f8fd4', // Core Experiences
+    '#5b9bd4', // Brand Strategy
+    '#d4a843', // Orchestration
+  ];
+
+  const datasets = TYPES.map((type, ti) => {
+    const data = weeks.map((weekStart, wi) => {
+      const weekEnd = wi < weeks.length - 1 ? weeks[wi + 1] : new Date(weekStart.getTime() + 7 * 86400000);
+      return projects.filter(p => {
+        if (p.type !== type) return false;
+        const d = new Date(p.due === '—' ? null : p.due);
+        const parsed = new Date(p.rawDate || p.due);
+        return parsed >= weekStart && parsed < weekEnd;
+      }).length;
+    });
+    return {
+      label: type,
+      data,
+      borderColor: TYPE_COLORS[ti],
+      backgroundColor: TYPE_COLORS[ti] + '22',
+      borderWidth: 2,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      tension: 0.3,
+      fill: false,
+    };
+  });
+
+  typeChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a',
+          borderWidth: 1,
+          titleColor: '#aaa',
+          bodyColor: '#e8e8e8',
+          callbacks: {
+            label: item => ` ${item.dataset.label}: ${item.raw}`,
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#555', font: { size: 10 }, maxRotation: 30 },
+          grid: { color: '#1e1e1e' },
+        },
+        y: {
+          ticks: { color: '#555', stepSize: 1, font: { size: 11 } },
+          grid: { color: '#1e1e1e' },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+
+  // Build custom legend below chart
+  const legendEl = document.getElementById('typeChartLegend');
+  if (legendEl) {
+    legendEl.innerHTML = TYPES.map((t, i) =>
+      `<span style="display:flex;align-items:center;gap:5px;font-size:10px;color:#777">
+        <span style="width:18px;height:2px;background:${TYPE_COLORS[i]};border-radius:2px;display:inline-block"></span>${t}
+      </span>`
+    ).join('');
+  }
+}
+
+projId, sheetRow, field, selectEl) {
   const value = selectEl.value;
   selectEl.dataset.prev = value; // remember previous value in case of auth error
   const ind = document.getElementById('ind-' + projId);
@@ -435,9 +517,14 @@ return s==='On Track'?'b-ontrack':s==='At Risk'?'b-atrisk':s==='Blocked'?'b-bloc
 function progClass(s){return s==='Done'?'prog-green':s==='Blocked'||s==='At Risk'?'prog-amber':'prog-red';}
 
 function renderProjects(){
-  const reg=document.getElementById('filterRegion').value;
-  const st=document.getElementById('filterStatus').value;
-  const list=projects.filter(p=>(!reg||p.region===reg)&&(!st||p.status===st));
+  const reg  = document.getElementById('filterRegion').value;
+  const st   = document.getElementById('filterStatus').value;
+  const tp   = document.getElementById('filterType').value;
+  const list = projects.filter(p =>
+    (!reg || p.region === reg) &&
+    (!st  || p.status === st)  &&
+    (!tp  || p.type   === tp)
+  );
   const g=document.getElementById('projectsGrid');g.innerHTML='';
   if(!list.length){g.innerHTML='<div style="color:#444;font-size:13px;padding:16px;grid-column:span 2">No projects match the filters.</div>';return;}
   list.forEach(p=>{
@@ -460,14 +547,6 @@ function renderProjects(){
     `;
     g.appendChild(c);
   });
-}
-
-function addProject(){
-  const title=document.getElementById('intakeTitle').value.trim();
-  if(!title)return;
-  projects.unshift({id:Date.now(),name:title,region:document.getElementById('intakeRegion').value,owner:'',status:'On Track',priority:document.getElementById('intakePriority').value,progress:0,due:document.getElementById('intakeDue').value||'TBD',notes:document.getElementById('intakeNotes').value.trim()});
-  buildStats();renderProjects();
-  ['intakeTitle','intakeNotes','intakeDue'].forEach(id=>document.getElementById(id).value='');
 }
 
 function buildMeeting(){
@@ -506,7 +585,9 @@ document.getElementById('todayStr').textContent=new Date().toLocaleDateString('e
 buildClocks();buildMeeting();
 fetchSheetProjects();
 setInterval(tickClocks, 30000);
-setInterval(fetchSheetProjects, 5 * 60 * 1000); // refresh Sheet every 5 minutes
+setInterval(fetchSheetProjects, 5 * 60 * 1000);
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script> // refresh Sheet every 5 minutes
 </script>
 </body>
 </html>
